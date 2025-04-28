@@ -1,0 +1,322 @@
+---
+title: "INFS 691 - Homework 9"
+subtitle: Simulation
+author: "Rose Dunderdale"
+output:
+  html_notebook: default
+  html_document: default
+---
+Homework 9.
+
+## PART I – Mechanics
+
+#### Question 0.
+(a)	Simulate 50 random observations on a continuous uniform distribution 
+over the interval [20,40]. Round the observation to 2 decimals and display 
+the first 6 observations. Use set.seed(1).
+```{r}
+# set the seed for reproducibility
+set.seed(1)
+
+# simulate 50 random observations from a Uniform (20,40) distribution
+data <- runif(50, min = 20, max = 40)
+
+# round to 2 decimal places 
+data_rounded <- round(data,2)
+
+# display the first 6 observations
+head(data_rounded)
+
+```
+
+(b)	Select a sample of 50 random integer numbers from the set of numbers between 20 and 40. Use set.seed(1). (You will NOT be using runif() function for this selection). 
+```{r}
+# Set seed for reproducibility
+set.seed(1)
+
+# Sample 50 random integers between 20 and 40 (with replacement, since 40-20+1 = 21 integers < 50)
+sample_integers <- sample(20:40, size = 50, replace = TRUE)
+
+# Display the first 6 observations
+head(sample_integers)
+
+```
+
+(c)	A technician at UI Health can complete each vaccine shot in two minutes on the average. Simulate 50 observations for the service completion time (completion time for vaccine shots) in minutes by a technician. set.seed(1).
+What is the average completion time in this simulation? 
+```{r}
+# Set seed for reproducibility
+set.seed(1)
+
+# Simulate 50 observations from an exponential distribution
+completion_times <- rexp(50, rate = 0.5)
+
+# Display the first 6 observations
+head(completion_times)
+
+# Calculate and display the average completion time
+mean(completion_times)
+
+```
+**Answer**: 2.12 minutes is the average compeltion time    
+
+(d)	The completion time of an activity in a project is estimated to be a minimum of 4 days and a maximum of 7 days with the most likely completion time of 5 days. Simulate 200 trials to determine the completion time for this activity. set.seed(1). Histogram the completion times observed in this simulation. 
+```{r}
+# Install and load the triangle package if needed
+install.packages("triangle")
+library(triangle)
+
+# Set seed for reproducibility
+set.seed(1)
+
+# Simulate 200 trials
+completion_times <- rtriangle(200, a = 4, b = 7, c = 5)
+
+# Display the first 6 simulated times
+head(completion_times)
+
+# Plot a histogram
+hist(completion_times, 
+     main = "Simulated Completion Times (Triangular Distribution)",
+     xlab = "Completion Time (days)", 
+     col = "lightblue", 
+     border = "black")
+
+```
+
+(e)	The time it takes to go to Madison, Wisconsin from Chicago is normally distributed with a mean of 160 minutes with a standard deviation of 8 minutes. Use a simulation of 100 trials to determine the driving time to Madison, Wisconsin. set.seed(1)
+```{r}
+# Set seed for reproducibility
+set.seed(1)
+
+# Simulate 100 trials from a normal distribution
+driving_times <- rnorm(100, mean = 160, sd = 8)
+
+# Display the first 6 simulated driving times
+head(driving_times)
+
+```
+
+## PART II - Application
+
+FashionTech is an online apparel retailer that specializes in activewear for both men and women with active and outdoors lifestyle. FashionTech's best selling item is a red pullover jacket for women. Abigail Kwan, the company's operations manager, is looking for a better, more data driven strategy for production and staffing for this product.
+
+The selling price for each pullover jacket is $50. 
+
+Abigail also obtains the weekly demand and production data from the corporate data warehouse. 
+She believes that the weekly demand for the pullover follows a normal distribution with an average of 139 units and a standard deviation of 14.61 units. 
+
+The material-per-unit cost of a pullover is also normally distributed with a mean of $12 and a standard deviation of $1.37. 
+
+The weekly production rate for each tailor varies between 31 and 41 units and follows a discrete uniform distribution. 
+
+FashionTech usually pays each tailor $700 per week. 
+
+The fixed overhead cost allocated to the pullover jacket production is approximately $800 per week. 
+
+You are to examine the profit variability given the uncertainty of the demand and the production rate as given above.
+
+#### Question 1:
+(a)	FashionTech wants to evaluate employing 2, 3, 4, or 5 tailors. Develop a simulation of 100 trials to examine the profit at each staffing (tailor) level.  Set the seed to 1.  set.seed(1).  
+```{r}
+# Set seed
+set.seed(1)
+
+# Number of trials
+ntrials <- 100
+
+# Tailor options
+tailor_options <- 2:5
+
+# Create empty list to store profit results
+profit_results <- list()
+
+# Loop through each number of tailors
+for (nTailors in tailor_options) {
+  
+  # Simulate demand (100 trials)
+  demand <- rnorm(ntrials, mean = 139, sd = 14.61)
+  
+  # Simulate material cost per unit (100 trials)
+  material_cost <- rnorm(ntrials, mean = 12, sd = 1.37)
+  
+  # Simulate production per tailor (uniform discrete between 31 and 41)
+  production_per_tailor <- sample(31:41, size = ntrials * nTailors, replace = TRUE)
+  
+  # Arrange production into a matrix: rows = trials, columns = tailors
+  production_matrix <- matrix(production_per_tailor, ncol = nTailors)
+  
+  # Total production per trial
+  production <- rowSums(production_matrix)
+  
+  # Quantity sold cannot exceed demand or production
+  QSold <- pmin(demand, production)
+  
+  # Revenue
+  revenue <- QSold * 50
+  
+  # Material cost (total units produced * material cost per unit)
+  material_total_cost <- production * material_cost
+  
+  # Tailor wage
+  wage_total <- 700 * nTailors
+  
+  # Total cost = material cost + tailor wages + fixed overhead
+  total_cost <- material_total_cost + wage_total + 800
+  
+  # Profit
+  profit <- revenue - total_cost
+  
+  # Store profit
+  profit_results[[paste0(nTailors, "_tailors")]] <- profit
+}
+
+# Now create the summary table
+profit_summary <- data.frame(
+  Tailors = tailor_options,
+  Mean_Profit = sapply(profit_results, mean),
+  SD_Profit = sapply(profit_results, sd),
+  Min_Profit = sapply(profit_results, min),
+  Max_Profit = sapply(profit_results, max)
+)
+
+print(profit_summary)
+
+```
+#### Question 2.
+
+Abigail is considering increasing the level of automation in the manufacturing process. 
+
+While the added automation will incur a one-time installation and training cost as well raise the overhead cost to $900 per week, it will allow FashionTech to use less-skilled tailors at a lower weekly wage of $550, and the weekly production rate will likely have less variability. 
+
+Based on the data from other manufacturers, Abigail believes that with increased automation, the weekly production rate will be uniformly distributed with lower and upper limits of 36 and 41 units, respectively. 
+
+Abigail wants to analyze her data, and based on the results, confirm her plan to send out a request for proposals from automation vendors for possible installation and training cost. 
+
+You are to examine the profit variability with this automation possibility with the given associated  costs (wage, overhead) and the uncertainty of production rate.
+
+(a)	Develop a simulation of 100 trials to examine the profit at each staffing (tailor) level with the automation. 
+```{r}
+# Set seed
+set.seed(1)
+
+# Number of trials
+ntrials <- 100
+
+# Tailor options
+tailor_options <- 2:5
+
+# Create empty list to store profit results
+profit_results_auto <- list()
+
+# Loop through each number of tailors (with automation)
+for (nTailors in tailor_options) {
+  
+  # Simulate demand (100 trials)
+  demand <- rnorm(ntrials, mean = 139, sd = 14.61)
+  
+  # Simulate material cost per unit (100 trials)
+  material_cost <- rnorm(ntrials, mean = 12, sd = 1.37)
+  
+  # Simulate production per tailor (uniform discrete between 36 and 41)
+  production_per_tailor <- sample(36:41, size = ntrials * nTailors, replace = TRUE)
+  
+  # Arrange production into a matrix: rows = trials, columns = tailors
+  production_matrix <- matrix(production_per_tailor, ncol = nTailors)
+  
+  # Total production per trial
+  production <- rowSums(production_matrix)
+  
+  # Quantity sold cannot exceed demand or production
+  QSold <- pmin(demand, production)
+  
+  # Revenue
+  revenue <- QSold * 50
+  
+  # Material cost (total units produced * material cost per unit)
+  material_total_cost <- production * material_cost
+  
+  # Tailor wage
+  wage_total <- 550 * nTailors
+  
+  # Total cost = material cost + tailor wages + fixed overhead
+  total_cost <- material_total_cost + wage_total + 900
+  
+  # Profit
+  profit <- revenue - total_cost
+  
+  # Store profit
+  profit_results_auto[[paste0(nTailors, "_tailors")]] <- profit
+}
+
+# Now create the summary table
+profit_summary_auto <- data.frame(
+  Tailors = tailor_options,
+  Mean_Profit = sapply(profit_results_auto, mean),
+  SD_Profit = sapply(profit_results_auto, sd),
+  Min_Profit = sapply(profit_results_auto, min),
+  Max_Profit = sapply(profit_results_auto, max)
+)
+
+print(profit_summary_auto)
+
+```
+
+**Answer Question 2B**: 
+Based on the summary results, hiring 3 tailors gives the highest mean profit 
+($1,756.09), and the variability (standard deviation) is similar to 4 tailors, 
+but with a higher average profit. 
+
+## Question 3.
+What do you recommend FashionTech do? Continue with the currents system or 
+increase automation? Why?       
+**Answer**: 
+
+Higher Average Profit:
+Simulations show that, across all staffing levels (2–5 tailors), average weekly
+profits are higher under automation than under the current manual system.
+Although fixed overhead costs rise slightly ($800 ➔ $900/week), savings in 
+labor costs ($700 ➔ $550/tailor) and more consistent production rates (36–41 
+units vs. 31–41) more than compensate.
+
+Reduced Variability and Risk:
+Automation tightens production variability (from ±5 units to ±2.5 units per
+tailor), resulting in more stable weekly output.
+Stable production better matches uncertain weekly demand (~139 units on average)
+, reducing risk of underproduction or waste.
+
+Labor Cost Efficiency:
+By paying lower-skilled workers $550/week (instead of $700), FashionTech lowers
+its fixed labor burden.
+As staffing levels grow (e.g., if 5 tailors are used), the cumulative labor 
+savings are significant.
+
+Capacity for Growth:
+With more reliable production, FashionTech can scale more confidently to meet 
+peak seasonal demands without scrambling for expensive skilled labor.
+This positions the company for smoother expansion into other apparel lines or 
+broader markets.
+
+Strategic Competitiveness:
+Competitors are likely automating.
+Early adoption keeps FashionTech cost-competitive, improves margins, and frees 
+up capital for marketing, product innovation, or other growth initiatives.
+
+Installation Costs Are a One-Time Hit:
+While automation has upfront costs (installation/training), the weekly profit 
+improvements suggest that FashionTech can recoup the investment fairly quickly.
+Payback period estimates can be calculated separately, but the simulation 
+suggests strong profitability gains week-over-week once installed.
+
+Final Recommendation:
+FashionTech should proceed with the automation plan.
+The average profit increases with automation (especially with 3 tailors), 
+and the reduced variability makes it a more stable choice.
+The lower wages for tailors and the more predictable production rates will 
+provide consistent results and reduce the risk associated with demand and 
+production fluctuations.
+Even though the overhead costs rise, the automation provides better 
+profitability with lower overall risk compared to the manual system, 
+especially with 5 tailors.
+In short, the move to automation is a data-driven decision that will 
+improve profitability while maintaining control over risk and operational costs.
